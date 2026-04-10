@@ -1,0 +1,1162 @@
+%!xelatex = 'xelatex --halt-on-error %O %S'
+
+\documentclass{thuemp}
+\usepackage{lipsum}  % 生产假书乱文的包，实际使用时可去掉
+\usepackage[inline]{enumitem}
+\usepackage{multirow}
+\usepackage{threeparttable}
+
+\usepackage{listings}
+\usepackage{xcolor}
+
+
+
+\begin{document}
+
+% 标题，作者
+\emptitle{关于工业用蒸汽制备的流程分析与比较}
+\empauthor{胡家瑞}{谢晓云}
+
+% 奇数页页眉 % 请在这里写出第一作者以及论文题目
+\fancyhead[CO]{{\footnotesize 胡家瑞: 关于工业用蒸汽制备的流程分析与比较}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 关键词 摘要 首页脚注
+%%%%%%%%关键词
+\Keyword{蒸汽制备; 吸收式换热器；多级热泵；能效比较；数值计算}
+\twocolumn[
+\begin{@twocolumnfalse}
+\maketitle
+
+%%%%%%%%摘要
+\begin{empAbstract}
+本文分析比较了两种常见的工业用蒸汽制备流程：基于吸收式
+换热器+热泵的流程和基于多级热泵的流程，利用来自一次网
+的$90/20\,^\circ\mathrm{C}$热水，分别制备0.3MPa和
+0.6MPa两种压力下、质量流量为100t/hr的蒸汽。通过对两种
+流程的热力学分析，以及能量守恒的
+核算，我们能够综合评价两种流程的能效表现；
+此外，本文基于汇报阶段的修改意见，使用matlab工具
+对两种流程的最优中间闪蒸压力以及蒸汽压缩机的补水计算
+进行了补充分析。
+\end{empAbstract}
+
+%%%%%%%%英文标题、作者、摘要、关键词
+\emptitleEn{Analysis and Comparison of Industrial Steam Generation Processes}
+\empauthorEn{Jiarui Hu}{Prof. Xie}
+\KeywordEn{Steam Generation; Absorption Heat Exchanger; Multi-Stage Heat Pump; Energy Efficiency Comparison; Numerical Simulation}
+
+\begin{empAbstractEn}
+This report analyzes and compares two common industrial steam generation processes: the process based on absorption heat exchanger combined with a heat pump, and the process based on a multi-stage heat pump. Using $90/20\,^\circ\mathrm{C}$ hot water from the primary network, steam at 0.3MPa and 0.6MPa pressures with a mass flow rate of 100t/hr is prepared respectively. Through thermodynamic analysis and energy conservation calculations, we can comprehensively evaluate the energy efficiency of both processes. Additionally, based on the revision comments from the presentation stage, MATLAB tools are used to conduct supplementary analysis on the optimal intermediate flash pressure and steam compressor makeup water calculations for both processes.
+\end{empAbstractEn}
+
+
+%%%%%%%%首页角注，依次为实验时间、报告时间、学号、email
+\empfirstfoot{2026-04-00}{2026-04-10}{2023012595}{hu-jr23@mails.tsinghua.edu.cn}
+\end{@twocolumnfalse}
+]
+%%%%%%%%！首页角注可能与正文重叠，请通过调整正文中第一页的\enlargethispage{-3.3cm}位置手动校准正文底部位置：
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  正文由此开始
+\wuhao 
+%  分栏开始
+
+\section{题目概述}
+
+利用集中热网提供的 90$^\circ C$/20$^\circ C$ 循环热水制备工
+业生产要求的0.3$\sim$0.6MPa低压
+蒸汽有两种方式。一种是利用吸收式换热器，将集中热网的大温差热量
+变换为小温差热量，
+之后通过电动热泵提升品位，最后通过闪蒸罐和水蒸气压缩机压缩
+到要求的蒸汽参数，如图\ref{method1}；另外
+一种是利用多级电动热泵，将大温差的循环热水热量直接提升品
+位，再通过闪蒸罐和水蒸气
+压缩机压缩到要求的蒸汽参数，如图\ref{method2}。
+
+\begin{figure}[H]
+	\centering
+	\begin{minipage}{0.49\linewidth}
+		\centering
+		\includegraphics[width=0.9\linewidth]{./image/方案1.png}
+		\caption{吸收式换热器+电动热泵}
+		\label{method1}%文中引用该图片代号
+	\end{minipage}
+	%\qquad
+	\begin{minipage}{0.49\linewidth}
+		\centering
+		\includegraphics[width=0.9\linewidth]{./image/方案2.png}
+		\caption{多级电动热泵}
+		\label{method2}%文中引用该图片代号
+	\end{minipage}
+\end{figure}
+已知所需工业蒸汽为两种蒸汽：0.3MPa,100t/h；0.6MPa,100t/h。请参考这两
+种方法设计制备蒸汽的过程，以耗电量为主要评价指标对比两种方法。
+
+
+
+\section{对第一种方案的计算分析}\label{sec:scheme1_analysis}
+
+\subsection{目标工质为0.3MPa时}\label{sec:0.3MPa}
+
+工艺流程：$90^\circ\mathrm{C}$热网水首先进入第一类吸收式换热器，
+最终回水温度降
+至 $20^\circ\mathrm{C}$，并将$35^\circ\mathrm{C}$的水再生到
+$40^\circ\mathrm{C}$ 作为电动热泵蒸发侧热源。取最小换热
+端差 $\Delta T_{\text{min}} = 5^\circ\mathrm{C}$（下同），则热泵蒸
+发温度为 $30^\circ\mathrm{C}$。
+
+
+
+我们设定闪蒸罐中的压力$p_{flash}$是0.1MPa，
+对应的温度$T_{flash}$是$99.63^\circ\mathrm{C}$，这也就是
+闪蒸剩余饱和液体的温度($T_{h,in}$)，下同。
+在冷凝器放热过程中高温产汽侧有温升，设$T_{h,out}=105^\circ\mathrm{C}$，
+则热泵冷凝温度$T_{pc}$为$110^\circ\mathrm{C}$。
+本过程的$T-Q$如图\ref{fig:scheme1_TQ}。
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 第一个图的火积耗散，一会插进来
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+
+
+\begin{figure}[htbp]
+	\centering 
+\begin{tikzpicture}[scale=0.5]
+
+% ======================
+% 温度坐标定义
+% ======================
+\def\Ttwenty{2}
+\def\Tthirty{3}
+\def\Tthirtyfive{3.5}
+\def\Tforty{4}
+\def\Tninety{9}
+\def\ToneTwenty{9.963}
+\def\ToneThirty{10.5}
+\def\ToneThirtyFive{11.0}
+
+% ======================
+% 坐标轴
+% ======================
+\draw[->] (0,0) -- (12.5,0) node[right] {$Q$};
+\draw[->] (0,0) -- (0,12) node[above] {$T/^\circ C$};
+
+% ======================
+% 温度虚线
+% ======================
+\foreach \y in {\Tninety,\Tforty,\Tthirtyfive,\Ttwenty,\ToneTwenty,\ToneThirty,\ToneThirtyFive,\Tthirty}
+    \draw[dashed,gray!60] (0,\y) -- (10,\y);
+
+% ======================
+% 温度标注
+% ======================
+\node[left] at (0,\Tninety) {90};
+\node[left] at (0,\Tforty) {40};
+\node[left] at (0,\Tthirtyfive) {35};
+\node[left] at (0,\Ttwenty) {20};
+\node[left] at (0,\ToneTwenty) {99.63};
+\node[left] at (0,\ToneThirty) {105};
+\node[left] at (0,\ToneThirtyFive) {110};
+\node[left] at (0,\Tthirty) {30};
+
+% ======================
+% 横轴分段
+% ======================
+\draw[<->] (0,-0.8) -- (6,-0.8);
+\node at (3,-1.2) {$Q_1$};
+
+\draw[<->] (6,-0.8) -- (9,-0.8);
+\node at (7.5,-1.2) {$Q_e$};
+
+\draw[<->] (9,-0.8) -- (12,-0.8);
+\node at (10.5,-1.2) {$W$};
+
+% 分界竖线
+\draw[dashed] (6,0) -- (6,\ToneThirtyFive);
+\draw[dashed] (9,0) -- (9,\ToneThirtyFive);
+\draw[dashed] (12,0) -- (12,\ToneThirtyFive);
+
+% ======================
+% 🔴 火积1：吸收式换热器 + 蒸发器
+% ======================
+\fill[blue!20, opacity=0.5]
+(0,\Tninety) --
+(60/13,47/13) --
+(0,\Tforty) -- cycle;
+
+
+\fill[red!20, opacity=0.5]
+(60/13,47/13) --
+(6,3.5) --
+(6,\Ttwenty) -- cycle;
+
+% ======================
+% 🔵 火积2（正确分解版）
+% ======================
+
+% （1）蒸发侧火积（梯形）
+\fill[blue!20, opacity=0.5]
+(6,\Tthirty) --
+(9,\Tthirty) --
+(9,\Tforty) --
+(6,\Tthirtyfive) -- cycle;
+
+
+
+% （2）冷凝侧火积（梯形）
+\fill[blue!30, opacity=0.5]
+(6,\ToneThirtyFive) --
+(12,\ToneThirtyFive) --
+(12,\ToneThirty) --
+(6,\ToneTwenty) -- cycle;
+
+
+% ======================
+% 一次网（红）
+% ======================
+\draw[red, thick, ->] (0,\Tninety) -- (6,\Ttwenty);
+
+% ======================
+% 低温回路（蓝）
+% ======================
+\draw[blue, thick, ->] (6,\Tthirtyfive) -- (0,\Tforty);
+\draw[blue, thick, ->] (9,\Tforty) -- (6,\Tthirtyfive);
+
+% ======================
+% 高温工质回路（黑）
+% ======================
+\draw[black, thick, ->] (6,\ToneTwenty) -- (12,\ToneThirty);
+
+% ======================
+% 蒸发/冷凝温度线
+% ======================
+\draw[black, ultra thick] (0,\Tthirty) -- (12,\Tthirty);
+\node[right] at (10,\Tthirty-0.5) {$T_{pe}=30^\circ C$};
+
+\draw[black, ultra thick] (6,\ToneThirtyFive) -- (12,\ToneThirtyFive);
+\node[above] at (9,\ToneThirtyFive) {$T_{pc}=110^\circ C$};
+
+% ======================
+% 点标注
+% ======================
+\node[below right] at (6,\ToneTwenty) {$T_{h,in}$};
+\node[below right] at (12,\ToneThirty) {$T_{h,out}$};
+
+% ======================
+% 图例
+% ======================
+\begin{scope}[shift={(9.2,7.2)}]
+    \draw (0,0) rectangle (3.8,2.8);
+
+    \draw[red, thick] (0.3,2.2) -- (1.2,2.2);
+    \node[right] at (1.3,2.2) {一次网};
+
+    \draw[blue, thick] (0.3,1.7) -- (1.2,1.7);
+    \node[right] at (1.3,1.7) {低温热源回路};
+
+    \draw[black, thick] (0.3,1.2) -- (1.2,1.2);
+    \node[right] at (1.3,1.2) {高温工质回路};
+
+    \fill[red!20] (0.3,0.6) rectangle (1.2,0.9);
+    \node[right] at (1.3,0.75) {负面积};
+
+    \fill[blue!20] (0.3,0.1) rectangle (1.2,0.4);
+    \node[right] at (1.3,0.25) {火积};
+\end{scope}
+
+\end{tikzpicture}
+\caption{吸收式换热器+热泵表示积耗散}
+\label{fig:scheme1_TQ}
+\end{figure}
+
+
+注意，本部分及以下的分析仅为初步分析，后续我们将基于matlab工具对
+闪蒸压力的选取以及蒸汽压缩机的补水计算进行更为详细的数值分析，
+以进一步优化流程设计并提升能效表现。
+
+
+
+在汇报部分，我
+单独地将“闪蒸罐内”和“末端压缩机”的部分
+分开来计算电功耗，忽略了末端压缩机中的补水量
+的影响，是不准确的。事实上，对于闪蒸过程输出的蒸汽流量$m_{steam}^{(1)}$
+和末端压缩机用于降温而补水的流量$m_{steam}^{(2)}$，应存在
+如下约束：
+\begin{equation}\label{eq:1}
+m_{steam}^{(1)} + m_{steam}^{(2)} = 100\,\mathrm{t/hr}
+\end{equation}
+
+所以我们不再能将两部分的功耗按照100/h的流量分开来算并求和。
+但我们依然可以
+将闪蒸罐视作一个控制体，如图\ref{fig:flash_energy}。进入闪蒸罐的有
+温度为$20^\circ\mathrm{C}$的补水，
+质量流量为$m_{steam}^{(1)}$，比焓为$h_0=83.92kJ/kg$；以及
+通过冷凝器加热的热量$Q_e$。输出的有
+温度为$T_{flash}$的的饱和蒸汽，质量流量依然为$m_{steam}^{(1)}$，比焓
+为$h_{g,flash,99.63}=2674.95kJ/kg$通过文件\url{index_of_WATER.m}查得。
+
+对于能量守恒，应该有：
+\begin{equation}\label{eq:2}
+    Q_c=m_{steam}^{(1)}(h_{g,flash,99.63}-h_0)
+\end{equation}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[scale=0.6]
+% ======================
+% 控制体（闪蒸罐）
+% ======================
+\draw[thick] (3,2) rectangle (7,6);
+\node at (5,4) {闪蒸罐};
+% ======================
+% 左侧输入：Q_c（红色）
+% ======================
+\draw[red, thick, ->] (1,4.5) -- (3,4.5);
+\node[above, red] at (2,4.5) {$Q_c$};
+% ======================
+% 左下输入：补水焓流（黑色）
+% ======================
+\draw[black, thick, ->] (1,2.8) -- (3,2.8);
+\node[below] at (2,2.8) {$h_0 \times 100\,\mathrm{t/h}$};
+%===================
+% 右侧输出：蒸汽焓流（红色）
+% ======================
+\draw[red, thick, ->] (7,4) -- (9,4);
+\node[above, red] at (8,4) {$h_{g,\mathrm{flash}} \times 100\,\mathrm{t/h}$};
+\end{tikzpicture}
+\caption{闪蒸罐控制体能量流示意图}\label{fig:flash_energy}
+\end{figure}
+热泵的实际性能系数(COP)可以按照式\ref{eq:3}计算：
+\begin{equation}\label{eq:3}
+    COP=\varepsilon_p \cdot \frac{T_{pc}}{T_{pc}-T_{pe}}=4.79\varepsilon_p
+\end{equation}
+
+其中$\varepsilon_p$为热泵的热力完善度，这是表征热泵的
+实际性能与理想的Carnot循环之间差距的程度的参数，蒸发温度与冷凝温度
+之差($T_{pc}-T_{pe}$)越小，$\varepsilon_p$越大。
+在\ref{sec:0.3MPa}部分我们取$\varepsilon_p$为0.8。
+所以\ref{sec:0.3MPa}情形下的热泵系数为4.28。则$W_1$为：
+\begin{equation}\label{eq:4}
+    W_1=\frac{Q_e}{COP}=\frac{m_{steam}^{(1)}(h_{g,flash,99.63}-h_0)}{COP}
+\end{equation}
+
+对于末端压缩机的功耗 $W_2$，我们认为补水
+$m_{steam}^{(2)}$仍为20$^\circ$C、焓为 $h_0$ 的水；压缩模式
+为等熵压缩，等熵压缩效率 $\varepsilon_{comp}$ 取0.8，即实际出口焓值为：
+
+\begin{equation}\label{eq:5}
+    h_{out} = h_{g,flash} + \frac{h_{out,s} - h_{g,flash}}{\varepsilon_{comp}}
+\end{equation}
+其中 $h_{out,s}$ 为从 0.1MPa 饱和蒸汽理想等熵压缩到 0.3MPa 时的焓值。
+由于该等熵压缩终点进入过热蒸汽区，为了规避线性插值在非线性区的较大误差，
+本研究直接调用 MATLAB 中的 CoolProp 库，基于 IAPWS-IF97 标准状态方程进行计算：
+\begin{lstlisting}[
+    language=MATLAB,
+    breaklines=true,      % 关键：允许自动折行
+    columns=flexible,     % 关键：让字符间距更紧凑，适合窄栏
+    xleftmargin=2em,      % 可选：左侧留点边距，显得不那么挤
+    frame=single,         % 可选：加个框，看起来更整齐
+    basicstyle=\small\ttfamily % 稍微调小一点字号，更适合双栏
+]
+P_flash = 0.1e6;
+s1 = double(py.CoolProp.CoolProp.PropsSI('S', 'P', P_flash, 'Q', 1, 'Water'));
+\end{lstlisting}
+有了$h_{out}$的值，根据能量守恒定律，可得：
+\begin{equation}\label{eq:7}
+ m_{steam}^{(1)} h_{out} + m_{steam}^{(2)} h_0 = m_{steam} h_{g,0.3}
+\end{equation}
+其中，$h_{g,0.3}$ 为 0.3MPa 下的饱和蒸汽比焓，
+$h_0$ 为 20$^\circ$C 补水的比焓。
+联立方程组解得进入压缩机的实际蒸汽流量 $m_{steam}^{(1)}$ 为：
+\begin{equation}\label{eq:8}
+    m_{steam}^{(1)} = m_{steam} \frac{h_{g,0.3} - h_0}{h_{out} - h_0}
+\end{equation}
+出于避免湿压缩的目的，补水 $m_{steam}^{(2)}$ 不经过压缩机，
+吸收压缩机过热蒸汽的热量，变为输出的100t/h蒸汽的一部分($m_{steam}^{(2)}$)。
+则末端压缩机的实际功耗 $W_2$ 应基于 $m_{steam}^{(1)}$ 计算：
+\begin{equation}\label{eq:9}
+    W_2 = m_{steam}^{(1)} (h_{out} - h_{g,flash})
+\end{equation}
+联立式\ref{eq:1}-\ref{eq:9}，
+我们可以求解出压缩机实际出口焓值 $h_{out}$、
+闪蒸产汽量 $m_{steam}^{(1)}$、补水流量 $m_{steam}^{(2)}$
+、热泵功耗 $W_1$ 和末端压缩机功耗 $W_2$以及总的功耗。
+为了简化计算，我们使用MATLAB进行上述过程的数值求解
+（见附件\url{HW1_W2_ping_heng_ji_suan.m}），
+对应的 MATLAB 计算结果如下：
+\begin{lstlisting}[
+    language=MATLAB,
+    breaklines=true,
+    columns=flexible,
+    frame=single,
+    basicstyle=\small\ttfamily
+]
+命令行窗口
+--- 流量平衡结果 ---
+闪蒸蒸汽流量 m_steam_1: 92.436 t/h
+补水减温流量 m_steam_2: 7.564 t/h
+--- 功耗计算结果 ---
+热泵功耗 W1: 15527.30 kW (COP = 4.28)
+压缩机功耗 W2: 6830.63 kW
+系统总功耗 W_total: 22357.93 kW
+>>
+\end{lstlisting}
+
+
+
+
+
+\subsection{目标工质为0.6MPa时}
+
+
+
+
+由于二者均是先闪蒸到0.1MPa后再压缩，所以其基本工艺流程、原理和计算公式应和\ref{sec:0.3MPa}类似；
+但由于两次压缩的压缩比不同，所以两处补水的比例
+$m_{steam}^{(1)}/m_{steam}^{(2)}$会发生变化。
+
+我们同样使用MATLAB进行数值求解，基于之前的\url{HW1_W2_ping_heng_ji_suan.m}，
+将闪蒸压力、压缩机出口压力等参数调整为0.6MPa对应的数值后
+，得到以下计算结果（见文件\url{calc_06MPa.m}）：
+\begin{lstlisting}[
+    language=MATLAB,
+    breaklines=true,
+    columns=flexible,
+    frame=single,
+    basicstyle=\small\ttfamily
+]
+命令行窗口
+--- 0.6 MPa 流量平衡结果 --
+闪蒸蒸汽流量 m_steam_1: 87.209 t/h
+补水减温流量 m_steam_2: 12.791 t/h
+--- 功耗计算结果 ---
+热泵功耗 W1: 14647.73 kW (COP = 4.28)
+压缩机功耗 W2: 11459.37 kW
+系统总功耗 W_total: 26107.10 kW
+>> 
+\end{lstlisting}
+
+
+
+\section{对第二种方案的计算分析}\label{sec:scheme2_analysis}
+
+
+本部分仍然假设闪蒸后的初级蒸汽压力为0.1MPa，那么对于式\ref{eq:7}
+的焓平衡关系和式\ref{eq:1}的质平衡关系，
+可知此时的 $m_{steam}^{(1)}$ 和 $m_{steam}^{(2)}$ 的数值与\ref{sec:0.3MPa}部
+分完全相同；此外，水蒸汽压缩机的
+部分功耗 $W_2$ 也与\ref{sec:0.3MPa}部分完全相同。
+
+以下，我们讨论$W_1=\sum W_1^{(i)}$的计算。其中
+，各级热泵制备的闪蒸蒸汽流量配比为$5:3:2$，我们在后面将对此进行讨论。
+
+
+\subsection{目标工质为0.3MPa时}\label{sec:scheme2_03MPa}
+
+
+
+我们同样可以画出
+方案二的$T-Q$图，如图\ref{fig:scheme2_TQ}。注意，本部分
+假设了一种比较理想的情况，
+即被冷凝器抬升温度的三股流体的温度升高幅度相同，
+均为$99.63^\circ\mathrm{C}\rightarrow 105^\circ\mathrm{C}$。
+
+\begin{figure}[htbp]
+	\centering 
+
+	\begin{tikzpicture}[scale=0.5]
+
+% ======================
+% 温度映射（严格单调）
+% ======================
+\def\Ttwenty{2}
+\def\Tfifteen{1.5}
+\def\Tthirtyfive{3.5}
+\def\Tfiftyfive{5.5}
+\def\Tninety{9}
+\def\Tflash{9.963}
+\def\Thout{10.5}
+\def\Tpc{11.0}
+
+% ======================
+% 坐标轴
+% ======================
+\draw[->] (0,0) -- (12,0) node[right] {$Q$};
+\draw[->] (0,0) -- (0,12) node[above] {$T/^\circ C$};
+
+% ======================
+% 横轴分段（蒸发侧）
+% ======================
+\def\Qone{3}
+\def\Qtwo{6}
+\def\Qthree{9}
+\def\QW{11}
+
+% ======================
+% 冷凝侧累计Q（关键）
+% ======================
+\def\QhOne{3.8}
+\def\QhTwo{7.4}
+\def\QhThree{11}
+
+% 分界线
+\draw[dashed] (\Qone,0) -- (\Qone,10);
+\draw[dashed] (\Qtwo,0) -- (\Qtwo,10);
+\draw[dashed] (\Qthree,0) -- (\Qthree,10);
+\draw[dashed] (\QW,0) -- (\QW,10);
+
+% ======================
+% 温度虚线
+% ======================
+\foreach \y in {\Tninety,\Ttwenty,\Tflash,\Thout,\Tpc,\Tfiftyfive,\Tthirtyfive,\Tfifteen}
+    \draw[dashed,gray!60] (0,\y) -- (\QW,\y);
+
+% ======================
+% 一次网（红线）
+% ======================
+\draw[red, thick, ->] (0,\Tninety) -- (\Qthree,\Ttwenty);
+
+% ======================
+% 蒸发温度（分段）
+% ======================
+\draw[blue, thick] (0,\Tfiftyfive) -- (\Qone,\Tfiftyfive);
+\draw[blue, thick] (\Qone,\Tthirtyfive) -- (\Qtwo,\Tthirtyfive);
+\draw[blue, thick] (\Qtwo,\Tfifteen) -- (\Qthree,\Tfifteen);
+
+% ======================
+% 高温工质（三段串联）
+% ======================
+\draw[black, thick, ->] (0,\Tflash) -- (\QhOne,\Thout);
+\draw[black, thick, ->] (\QhOne,\Tflash) -- (\QhTwo,\Thout);
+\draw[black, thick, ->] (\QhTwo,\Tflash) -- (\QhThree,\Thout);
+
+% ======================
+% ⭐ 新增：终点向Q轴投影（不标注）
+% ======================
+\draw[dashed] (\QhOne,\Thout) -- (\QhOne,0);
+\draw[dashed] (\QhTwo,\Thout) -- (\QhTwo,0);
+\draw[dashed] (\QhThree,\Thout) -- (\QhThree,0);
+
+
+
+% ======================
+% 🔵 多级热泵火积耗散（严格按冷热曲线之间）
+% ======================
+
+% -------- 蒸发侧火积（三段分别）--------
+
+% ======================
+% 🔵 蒸发侧火积（严格梯形）
+% ======================
+
+% 第1级（低温热源：60→55，对应Tfiftyfive上方5℃）
+\fill[blue!15, opacity=0.6]
+(0,\Tninety) --
+(\Qthree,2) --
+(\Qthree,1.5) --
+(\Qtwo,1.5) --
+(\Qtwo,3.5) --
+(\Qone,3.5) --
+(\Qone,5.5) --
+(0,5.5) -- cycle;
+
+
+
+
+% -------- 冷凝侧火积（三段）--------
+
+\fill[blue!30, opacity=0.5]
+(0,\Tpc) -- (\QhOne,\Tpc) --
+(\QhOne,\Thout) -- (0,\Tflash) -- cycle;
+
+\fill[blue!30, opacity=0.5]
+(\QhOne,\Tpc) -- (\QhTwo,\Tpc) --
+(\QhTwo,\Thout) -- (\QhOne,\Tflash) -- cycle;
+
+\fill[blue!30, opacity=0.5]
+(\QhTwo,\Tpc) -- (\QhThree,\Tpc) --
+(\QhThree,\Thout) -- (\QhTwo,\Tflash) -- cycle;
+
+
+% ======================
+% 冷凝温度（粗线）
+% ======================
+\draw[black, ultra thick] (0,\Tpc) -- (\QW,\Tpc);
+\node[above] at (10,\Tpc) {$T_{pc}=110^\circ C$};
+
+% ======================
+% 温度标注
+% ======================
+\node[left] at (0,\Tninety) {90};
+\node[left] at (0,\Ttwenty) {20};
+\node[left] at (0,\Tflash) {99.63};
+\node[left] at (0,\Thout) {105};
+
+\node[left] at (0,\Tfiftyfive) {$T_{pe}^{(1)}$};
+\node[left] at (0,\Tthirtyfive) {$T_{pe}^{(2)}$};
+\node[left] at (0,\Tfifteen) {$T_{pe}^{(3)}=15^\circ C$};
+
+% ======================
+% 横轴热量标注（保持原样）
+% ======================
+\draw[<->] (0,-0.8) -- (\Qone,-0.8);
+\node at (1.5,-1.2) {$Q_e^{(1)}$};
+
+\draw[<->] (\Qone,-0.8) -- (\Qtwo,-0.8);
+\node at (4.5,-1.2) {$Q_e^{(2)}$};
+
+\draw[<->] (\Qtwo,-0.8) -- (\Qthree,-0.8);
+\node at (7.5,-1.2) {$Q_e^{(3)}$};
+
+\draw[<->] (\Qthree,-0.8) -- (\QW,-0.8);
+\node at (10,-1.2) {$\sum W_1^{(i)}$};
+
+% ======================
+% 图例
+% ======================
+\begin{scope}[shift={(9.3,5.8)}]
+\draw (-0.2,-0.2) rectangle (4.0,2.7);
+
+\fill[blue!20] (0.3,2.2) rectangle (1.2,2.0);
+\node[right] at (1.3,2.2) {火积};
+
+\draw[red, thick] (0.3,1.7) -- (1.2,1.7);
+\node[right] at (1.3,1.7) {一次网};
+
+\draw[black, thick] (0.3,1.2) -- (1.2,1.2);
+\node[right] at (1.3,1.2) {高温工质};
+
+\draw[blue, thick] (0.3,0.7) -- (1.2,0.7);
+\node[right] at (1.3,0.7) {蒸发温度线};
+
+\draw[black,ultra thick] (0.3,0.2) -- (1.2,0.2);
+\node[right] at (1.3,0.2) {冷凝温度线};
+\end{scope}
+
+\end{tikzpicture}
+
+
+
+\caption{多级热泵表示积耗散}
+\label{fig:scheme2_TQ}
+\end{figure}
+
+
+在上一种方案中，我们设计在热泵蒸发温度为30$^\circ$C，冷凝
+温度为110$^\circ$C，温差为80$^\circ$C，热力完善度$\varepsilon_p$为0.8。
+在方案二中，热泵的蒸发温度
+分别为75$^\circ$C、45$^\circ$C和15$^\circ$C，冷凝
+温度均为110$^\circ$C，温差分别为35$^\circ$C、65$^\circ$C和95$^\circ$C。
+依据热力完善度与蒸发/冷凝温差的关系，
+我们假设方案二中三个热泵的热力完善度分别为0.9、0.85和0.5。
+
+该部分的计算与\ref{sec:0.3MPa}部分类似，
+只不过$COP$和热泵的功耗$W_1^{(i)}$需要分别计算并求和。最终得到的数值结果如下：
+
+\begin{lstlisting}[
+    language=MATLAB,
+    breaklines=true,
+    columns=flexible,
+    frame=single,
+    basicstyle=\small\ttfamily
+]
+命令行窗口
+方案二 (P_target = 0.3 MPa) 计算结果 ---
+【流量分布】
+分级闪蒸流量 m1: 46.218, m2: 27.731, m3: 18.487 (t/h)
+总闪蒸蒸汽流量 m_steam_1: 92.436 t/h
+补水减温流量   m_steam_2: 7.564 t/h
+【功耗分布】
+各级 COP: [9.85, 5.01, 2.02]
+热泵总功耗 W1: 13956.41 kW
+压缩机功耗 W2: 6830.63 kW
+系统总功耗 W_total: 20787.04 kW
+>> 
+\end{lstlisting}
+
+
+
+\subsection{目标工质为0.6MPa时}\label{sec:scheme2_06MPa}
+
+计算原理与\ref{sec:scheme2_03MPa}完全相同，
+将闪蒸压力变化为0.6MPa后，得到以下数值结果（见文件\url{calc_06MPa_scheme2.m}）：
+
+\begin{lstlisting}[
+    language=MATLAB,
+    breaklines=true,
+    columns=flexible,
+    frame=single,
+    basicstyle=\small\ttfamily
+]
+命令行窗口
+--- 方案二 (P_target = 0.6 MPa) 计算结果 ---
+【流量分布】
+分级闪蒸流量 m1: 43.605, m2: 26.163, m3: 17.442 (t/h)
+总闪蒸蒸汽流量 m_steam_1: 87.209 t/h
+补水减温流量   m_steam_2: 12.791 t/h
+【功耗分布】
+各级 COP: [9.85, 5.01, 2.02]
+热泵总功耗 W1: 13165.82 kW
+压缩机功耗 W2: 11459.37 kW
+系统总功耗 W_total: 24625.20 kW
+>> 
+\end{lstlisting}
+
+\subsection{关于方案二流量分配的讨论}\label{sec:flow_distribution_discussion}
+
+在\ref{sec:scheme2_03MPa}和\ref{sec:scheme2_06MPa}部分的计算中，我们
+选取在三级热泵（按照蒸发温度的高低，分别记为A、B、C）的
+流量配比为：
+\begin{equation}\label{eq:10}
+    m_A : m_B : m_C = 5 : 3 : 2
+\end{equation}
+这种分配方式基于这样一种理念：由于热泵的性能系数（COP）与蒸发温度密切相关，
+蒸发温度越高，COP 越高，因此我们希望尽可能多的热量在高温热
+泵（A）中处理，以最大化整体系统的能效表现。相关证明在本文的附录部分。
+
+\section{指标$W_2$的优化：接近饱和线的压缩过程}
+
+
+在前面的讨论中，我们假设末级压缩机的入口为0.1MPa饱和蒸汽，
+水蒸气的压缩过程为接近等熵的过程，被拉高到
+0.3MPa或0.6MPa的过热蒸汽后通过定压过程
+达到饱和湿蒸汽状态。
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[scale=0.5]
+
+% ======================
+% 坐标轴
+% ======================
+\def\sdotone{6}
+
+\draw[->] (0,0) -- (8,0) node[right] {$s$};
+\draw[->] (0,0) -- (0,6) node[above] {$T$};
+
+% ======================
+% 饱和线（穹顶）
+% ======================
+\draw[thick] (2,1) .. controls (2.2,3) and (2.5,4.5) .. (4,5);
+\draw[thick] (6,1) .. controls (5.8,3) and (5.5,4.5) .. (4,5);
+
+\node[above] at (4,5) {临界点};
+
+% ======================
+% 状态点1
+% ======================
+\filldraw (6,1.5) circle (2pt);
+\node[right] at (6,1.5) {1};
+
+% ======================
+% 理想等熵（虚线）
+% ======================
+\draw[dashed, thick] (6,1.5) -- (6,4.2);
+
+\filldraw (6,4.2) circle (2pt);
+\node[left] at (6,4.2) {2s};
+
+% ======================
+% 实际压缩（偏右一点）
+% ======================
+\filldraw (6.3,4.2) circle (2pt);
+\node[right] at (6.3,4.2) {2};
+
+\draw[red, thick, ->] (6,1.5) -- (6.3,4.2);
+
+% ======================
+% 等压冷却
+% ======================
+\draw[blue, thick, ->]
+(6.3,4.2) .. controls (6.0,4.0) and (5.8,3.8) .. (5.5,3.5);
+
+\filldraw (5.5,3.5) circle (2pt);
+\node[left] at (5.3,3.5) {3};
+
+% ======================
+% 区域标注
+% ======================
+\node at (4,2) {湿蒸汽区};
+\node at (1.2,3) {液态};
+\node at (7,3) {过热蒸汽};
+
+\end{tikzpicture}
+\caption{水蒸气压缩过程的$T$-$s$示意图}
+\label{fig:Ts_compression}
+\end{figure}
+
+
+对于\ref{fig:Ts_compression}中的压缩过程，
+如前所述，其耗功可以表示为焓流之差除以
+等熵压缩效率；但对于无穷多级压缩，
+理论上可以将压缩过程分解为无数个小的等熵压缩-等压冷却过程，
+总体上该过程逼近饱和线，在图\ref{fig:Ts_compression}中表现为
+从点1沿着饱和线向上移动到达3。此时系统在
+蒸汽压缩机侧的补水量$m_{steam}^{(2)}$、压缩机的功耗$W_2$以及
+系统总功耗$W_{total}$都会发生变化。定性地来看，我们认为
+技术功及总的功耗会降低，而由于每一级压缩热都被补水的汽化潜
+热吸收了，补水量会增加。并且由于
+\ref{eq:7}的约束，如前所述，
+只要两方案的末端压缩机入口都是
+ $0.1\,\text{MPa}$ 饱和汽，目标都是 $0.3/0.6\,\text{MPa}$ 饱和汽，那么无限
+ 级压缩所需的补水量$m_{steam}^{(2)}$在两个方案的变化依然是相同的。
+
+我们在这里
+探讨了一种理想的压缩路径：无限级饱和压缩过程。
+该过程假设压缩机在微元压力提升后，立即通过喷入补水降温至该压力下的饱和态。
+在 $T-s$ 图（图\ref{fig:Ts_compression}）中，该路
+径表现为工质点紧贴饱和线向上移动(1$\rightarrow 3$)。
+
+压缩机消耗的技术功$\delta w$ 为：
+\begin{equation}
+    \delta w = \frac{v_g(p)}{\varepsilon_{comp}} dp
+\end{equation}
+其中，$v_g(p)$ 为对应压力下的饱和蒸汽比体积。由于 Case B 
+中质量流量随补水的连续加入而不断变化，
+其总功耗 $W_2$ 需在全压力路径上进行积分：
+\begin{equation}
+    W_2 = \int_{P_{flash}}^{P_{target}} \frac{m(p) v_g(p)}{\varepsilon_{comp}} dp
+\end{equation}
+同时考虑压力区间 $[p, p+dp]$ 内的微元控制体，根据
+能量守恒定律，系统在该压力下吸收的补
+水 $dm_{steam}^{(2)}$ 需满足平衡方程：
+\begin{equation}
+    \begin{aligned}
+           & m(p)h_g(p) + dm_{steam}^{(2)} h_0 + \delta W \\&= (m(p) + dm_{steam}^{(2)})(h_g(p) + dh_g)
+    \end{aligned}
+\end{equation}
+其中，$\delta W = m(p) \delta w$ 
+    为该微元段的指示功输入。展开上式并忽略二阶
+    无穷小量 $dm_{steam}^{(2)} dh_g$，整理可得
+    到补水质量流量随压力演化的常微分方程：
+    \begin{equation}\label{eq:dm2_dp}
+        \frac{dm_{steam}^{(2)}}{dp} = \frac{m(p) \left[ \frac{v_g(p)}{\varepsilon_{comp}} - \frac{dh_g}{dp} \right]}{h_g(p) - h_0}
+    \end{equation}
+该过程使用MATLAB求解，见文件\url{constract_of_lingdiansan.m}和
+\url{constract_of_lingdianliu.m}，得到以下数值结果：
+
+
+
+\begin{lstlisting}[
+    language=MATLAB,
+    breaklines=true,
+    columns=flexible,
+    frame=single,
+    basicstyle=\small\ttfamily
+]
+命令行窗口
+========== 0.3 MPa 热力学对比结果 ==========
+项目                 单级压缩 (A)      无限级饱和 (B)
+入口闪蒸流量 m1 (t/h):     92.436             92.950
+系统总补水量 m2 (t/h):      7.564              7.050
+压缩机总功耗 W2 (kW):     6830.63            6460.69
+------------------------------------------
+物理分析：无限级压缩节省功耗 5.4%。
+\end{lstlisting}
+
+\begin{lstlisting}[
+    language=MATLAB,
+    breaklines=true,
+    columns=flexible,
+    frame=single,
+    basicstyle=\small\ttfamily
+]
+命令行窗口
+========== 0.6 MPa 热力学对比结果 ==========
+项目                 单级压缩 (A)      无限级饱和 (B)
+入口闪蒸流量 m1 (t/h):     87.209             88.516
+系统总补水量 m2 (t/h):     12.791             11.484
+压缩机总功耗 W2 (kW):    11459.37           10519.01
+------------------------------------------
+物理分析：无限级压缩节省功耗 8.2%。
+\end{lstlisting}
+
+比较之下，无限级压缩能节约功，这是很易懂的；
+但Case.B的补水量比Case.A即单级压缩的补水量要少，
+这是与我们先前的推测不符的，
+毕竟无限级压缩省了功，理论上应该需要更多的补水进来。
+在本题情形下，我们认为
+对于单级压缩的状态点2（过热），
+过热部分的能量需要通过补水的汽化潜热来吸收；而对于无限级压缩的状态点2（饱和），
+由于其状态点更接近饱和线，过热部分的能量较少，因此需要的补水量也较少。
+
+
+
+
+
+
+
+
+
+\section{最佳闪蒸压力的确定}
+
+
+在\ref{sec:scheme1_analysis}和\ref{sec:scheme2_analysis}
+部分中，我们都认为闪蒸压力为0.1MPa是一个合理的选择，但未必最优。
+当闪蒸压力增大时，闪蒸蒸汽的焓值会增加，压缩机的功耗$W_2$会减小；
+但同时热泵的功耗$W_1$会增加，因为热泵需要提升的温差变大了。
+所以存在一个最佳的闪蒸压力，使得系统总功耗$W_{total}=W_1+W_2$最小。
+
+我们同样可以通过数值方法来确定这个闪蒸压力。
+系统总功耗 $W_{\mathrm{total}}$ 是闪蒸压力 $P_{\mathrm{flash}}$ 的非
+线性函数。数学本质是寻找一个最优的中间压力 $P_{\mathrm{flash}}^{*}$，使
+得热泵侧功耗 $W_1$ 与压缩机侧功耗 $W_2$ 之和达到极
+小值：
+\begin{equation}
+    \min W_{\mathrm{total}}(P_{\mathrm{flash}}) = W_1(P_{\mathrm{flash}}) + W_2(P_{\mathrm{flash}})
+\end{equation}
+这一部分（文件名\url{thebestFLASH.m}）我们引入了动
+态变化的热力完善度$\varepsilon_p$和等熵效率模
+型$\varepsilon_{comp}$，前者依据前面计算用热力完善度与
+蒸发/冷凝温差的关系进行拟合：
+\begin{lstlisting}[
+    language=MATLAB,
+    breaklines=true,
+    columns=flexible,
+    frame=single,
+    basicstyle=\small\ttfamily
+]
+...
+% 热力完善度拟合
+dT_pts = [35, 65, 80, 95];
+eps_pts = [0.9, 0.85, 0.8, 0.5];
+p_eps = polyfit(dT_pts, eps_pts, 2);
+get_eps = @(dT) min(0.9, max(0.1, polyval(p_eps, dT)));
+...
+\end{lstlisting}
+后者则使用压比来确定：
+\begin{lstlisting}[
+    language=MATLAB,
+    breaklines=true,
+    columns=flexible,
+    frame=single,
+    basicstyle=\small\ttfamily
+]
+...
+pr = Pt / Pf;
+eta_eff = max(0.45, 0.85 - 0.025 * pr); 
+...
+\end{lstlisting}
+同时，在方案二的多级热泵模型中，我们进
+一步设定了工程上限 $COP_{\mathrm{max}} = 10.0$ 以规避极小温差下
+的数值发散，确保计算结果
+符合工业实际：
+\begin{equation}
+    W_1 = \sum_{k=1}^{3} \frac{m_k(h_{g,f} - h_{0,f})}{\min \left( 10, \varepsilon_p \cdot \frac{T_{\mathrm{pc}}}{T_{\mathrm{pc}} - T_{\mathrm{pe},k}} \right)}
+\end{equation}
+则对于方案一/二、目标蒸汽为0.3MPa/0.6MPa的四种情况，
+其系统总功耗-闪蒸压力曲线如图\ref{fig:flash_pressure_optimization}。
+
+\begin{figure}[H]
+    \centering 
+    \includegraphics[width=0.8\linewidth]{./image/flash_pressure_optimization.jpg}
+    \caption{系统总功耗$W_{total}$与闪蒸压力$P_{flash}$的关系}
+    \label{fig:flash_pressure_optimization}
+\end{figure}
+所有工况下的功耗曲线均呈现出显著的“U”特征，这验证了系统中存在最佳闪蒸压力的理论推断。
+
+\section{对比分析}
+在前面的计算中，我们给出了作为主要评价指标的
+耗电量的计算结果。在本部分，我们将对作为次要评价指标的热网水利用量($p_{flash}=0.1MPa$)
+进行求解，并通过这个值验证能量的守恒关系，进一步分析两种方案的优劣。
+\subsection{次要指标：热网水的流量}
+热网水（一次网）通过换热器向系统提供低位热能。其质量流量 $M_{\mathrm{hw}}$ 取决于各方案在蒸发侧从热网吸收的总热量 $Q_{\mathrm{total,e}}$ 以及一次网的进出水温差：\begin{equation}M_{\mathrm{hw}} = \frac{Q_{\mathrm{total,e}}}{C_p \cdot (T_{\mathrm{in}} - T_{\mathrm{out}})}\end{equation}其中，$C_p = 4.186\,\mathrm{kJ/(kg \cdot K)}$ 为水的比热，$T_{\mathrm{in}} = 90^\circ\mathrm{C}$，$T_{\mathrm{out}} = 20^\circ\mathrm{C}$。根据能量守恒定律，系统在蒸发侧吸收的热量 $Q_{\mathrm{total,e}}$ 满足：\begin{equation}Q_{\mathrm{total,e}} = \sum Q_{c,i} - \sum W_{1,i}\end{equation}即热泵冷凝侧放出的总热量（用于闪蒸制气）减去热泵消耗的电功。
+
+代入\ref{sec:scheme1_analysis}和\ref{sec:scheme2_analysis}部分的计算结果，
+我们得到以下热网水流量：
+\begin{itemize}
+    \item 方案一、目标蒸汽0.3MPa：$M_{\mathrm{hw}} \approx 173.77\,\mathrm{kg/s}$
+    \item 方案一、目标蒸汽0.6MPa：$M_{\mathrm{hw}} \approx 163.92\,\mathrm{kg/s}$
+    \item 方案二、目标蒸汽0.3MPa：$M_{\mathrm{hw}} \approx 179.40\,\mathrm{kg/s}$
+    \item 方案二、目标蒸汽0.6MPa：$M_{\mathrm{hw}} \approx 169.21\,\mathrm{kg/s}$
+\end{itemize}
+
+\subsection{能量守恒的验证}
+从核算结果可以看出，在相同的目标蒸汽参数下，
+方案二所需的热网水流量均高于方案一。
+这一结果在定性上符合能量守恒定律，即方案二耗功（电）少，
+而使用的热网水（热）多；反之，方案一耗功多，使用的热网水少。
+
+这里我们需要定量地进一步验证。对于整个系统，
+其能量输入（热网水提供的热量+总耗电+$m_{steam}h_0$）
+应等于能量输出（闪蒸蒸汽的焓值）：
+
+\begin{equation}\label{eq:energy_balance}
+    \begin{aligned}
+           & W+M_{\mathrm{hw}} C_p (T_{\mathrm{in}} - T_{\mathrm{out}}) + m_{steam} h_0 \\&= m_{steam} h_{g,0.3/0.6}+ \varepsilon_{loss}
+    \end{aligned}
+\end{equation}
+其中，$\varepsilon_{loss}$ 表示系统的能量损失，$\varepsilon_{loss}/\left(m_{steam}h_{g,0.3/0.6}\right)$
+表示能量损失率。
+分别将\ref{sec:scheme1_analysis}和\ref{sec:scheme2_analysis}部分的计算结果和
+参数代入式\ref{eq:energy_balance}，得到：
+\begin{itemize}
+    \item 方案一、目标蒸汽0.3MPa：能量损失$\varepsilon_{loss}=125.27kW$，能量损失率$0.17\%$；
+    \item 方案一、目标蒸汽0.6MPa：能量损失$\varepsilon_{loss}=92.99kW$，能量损失率$0.12\%$；
+    \item 方案二、目标蒸汽0.3MPa：能量损失$\varepsilon_{loss}=41.02kW$，能量损失率$0.05\%$；
+    \item 方案二、目标蒸汽0.6MPa：能量损失$\varepsilon_{loss}=23.14kW$，能量损失率$0.03\%$。
+\end{itemize}
+上述结果说明能量闭合得非常好，前面的计算没有问题。
+
+
+\subsection{总结}
+
+\begin{table}[H]
+\centering
+\wuhao % 保持与正文一致的五号字
+\caption{方案一与方案二综合性能对比}
+\label{table:final_comparison}
+\begin{tabular}{lcccc}
+\toprule
+\multirow{2}{*}{\textbf{对比指标}} & \multicolumn{2}{c}{\textbf{方案一}} & \multicolumn{2}{c}{\textbf{方案二}} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5}
+& 0.3MPa  & 0.6MPa  & 0.3MPa  & 0.6MPa  \\
+\midrule
+\makecell{总功耗 \\(kW)} & 22357.93 & 26107.10 & \textbf{20787.04} & \textbf{24625.20} \\
+\makecell{单位能耗\\ (kWh/t)} & 223.58 & 261.07 & \textbf{207.87} & \textbf{246.25} \\
+\makecell{热网水流量 \\(kg/s)} & \textbf{173.77} & \textbf{163.92} & 179.40 & 169.21 \\
+\makecell{系统复杂度} & \multicolumn{2}{c}{较低} & \multicolumn{2}{c}{较高} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+可以看到，从作为主要评价指标的
+耗电量来讲，方案二（多级热泵）的性能略优
+于方案一（吸收式换热器+单级热泵）；
+但方案二需要更多的热网水，而且系统复杂度更高，同时
+我们做了三级热泵的冷凝温度相同这一较理想的假设，
+所以综合可以认为两种方案在能效方面表现相近，在
+特定情境下可能需要综合考虑进行选择。
+
+
+\section{结论}
+
+
+本文通过对基于吸收式换热器与多级热泵的两类工业蒸汽制备
+流程进行深度热力学分析，并辅以 MATLAB 进行数值仿真核算，得出如
+下结论：在 $P_{flash}=0.1\,\text{MPa}$ 的基准工况下，方案二（多级
+热泵）凭借更优的温差匹配特性，在制备 0.3MPa 与 0.6MPa 蒸汽时分别较
+方案一降低总耗电量，
+展现出理论能效上的优势；然而，这种增益是以增加热网水流量以
+及更高的系统复杂度为代价的。考虑到本文对多级热泵采取
+了冷凝温度相同这一较为理想的假设，且实际运行中多
+级耦合控制的不可逆损失可能进一步抵消能效收益，可
+以认为两种方案在综合能效表现上处于相近水平。此外，
+研究证实了系统存在最优闪蒸压力区间，且无限级饱
+和压缩路径具备更高的节电潜力。
+
+
+
+
+
+
+
+
+
+
+
+\appendix
+\section{MATLAB文件仓库地址与AIGC声明}
+
+正文中提到的所有MATLAB代码文件、以及本作业的Tex文件均已上传至GitHub仓库，
+地址为
+\url{https://github.com/hujr23/CSNYXT-Spring-2026-_BigHW1_Problem.4.git}
+在该仓库中，所有代码文件均已通过MATLAB R2024a版本测试验证。
+
+Gemini-3和ChatGPT参与了部分MATLAB代码的编写与调试。
+
+
+
+\section{关于\ref{sec:flow_distribution_discussion}中流量分配的证明}
+
+在方案二中，需论证为何优先利用高温位热源能使总功耗最小。设一次网
+热源温度区间为 $[T_{min}, T_{max}]$，单位温度区间产生的蒸汽
+质量流量为 $m(T)$。
+
+系统的目标函数为总功耗泛函 $W[m(T)]$：
+\begin{equation}
+W = \int_{T_{min}}^{T_{max}} m(T) w(T) \, dT
+\end{equation}
+其中，单位蒸汽耗功 $w(T)$ 定义为：
+\begin{equation}
+w(T) = \frac{\Delta h_{evap}}{COP(T)} = \frac{(h_{g,flash} - h_0)(T_{pc} - T)}{\varepsilon_p(T) \cdot T_{pc}}
+\end{equation}
+
+引入约束条件：
+\begin{itemize}
+    \item 总产量约束：$\int_{T_{min}}^{T_{max}} m(T) \, dT = m_{steam}^{(1)}$
+    \item 热源能力约束（热量守恒）：$m(T)(h_{g,flash} - h_0) \le \dot{M}_{source}c_p$。为简化分析，设单点最大产汽能力为 $m_{max}$，即 $0 \le m(T) \le m_{max}$。
+\end{itemize}
+构造拉格朗日泛函 $\mathcal{L}[m(T)]$：
+\begin{equation}
+\mathcal{L}= \int_{T_{min}}^{T_{max}} m(T) w(T) \, dT + \lambda \left( \int_{T_{min}}^{T_{max}} m(T) \, dT - m_{steam}^{(1)} \right)
+\end{equation}
+
+对 $m(T)$ 进行变分，得到判别函数
+\begin{equation}
+\frac{\delta \mathcal{L}}{\delta m(T)} = w(T) + \lambda
+\end{equation}
+
+为了考察 $w(T)$ 的单调性，对 $T$ 求导：
+\begin{equation}
+\frac{dw}{dT} = \frac{h_{g,flash} - h_0}{T_{pc}} \cdot \frac{d}{dT} \left[ \frac{T_{pc} - T}{\varepsilon_p(T)} \right]
+\end{equation}
+\begin{equation}
+\frac{dw}{dT} = \frac{h_{g,flash} - h_0}{T_{pc} \cdot \varepsilon_p(T)^2} \left[ -\varepsilon_p(T) - (T_{pc} - T) \frac{d\varepsilon_p}{dT} \right]
+\end{equation}
+
+由于：
+\begin{itemize}
+    \item 随热源温度 $T$ 升高，温跨减小，热力完善度提高，故 $\frac{d\varepsilon_p}{dT} > 0$；
+    \item 冷凝温度高于热源温度，$T_{pc} - T > 0$。
+\end{itemize}
+可知 $\frac{dw}{dT} < 0$ 、$w(T)$ 是关于$T$严格单调递减。
+根据庞特里亚金极大值原理，
+最优解必在边界取得。由于 $w(T)$ 在高温区（$T$ 靠近 $T_{max}$）取最小值，
+为了最小化积分 $W$，必须尽可能将 $m(T)$ 分配在 $w(T)$ 最小的区间。
+
+因此，最优产汽密度分布 $m^*(T)$ 为分段常数函数：
+\begin{equation}
+m^*(T) = 
+\begin{cases} 
+m_{max}, & T \in [T^*, T_{max}] \\
+0, & T \in [T_{min}, T^*) 
+\end{cases}
+\end{equation}
+其中分界温度 $T^*$ 由总产量
+约束 $\int_{T^*}^{T_{max}} m_{max} dT = m_{steam}^{(1)}$ 唯一确定。
+
+
+
+
+
+
+
+\renewcommand\refname{\heiti\wuhao\centerline{参考文献}\global\def\refname{参考文献}}
+\vskip 12pt
+
+\let\OLDthebibliography\thebibliography
+\renewcommand\thebibliography[1]{
+  \OLDthebibliography{#1}
+  \setlength{\parskip}{0pt}
+  \setlength{\itemsep}{2pt}
+}
+{
+\renewcommand{\baselinestretch}{1.2}
+\liuhao
+\bibliographystyle{gbt7714-numerical}
+\bibliography{./TempExample}
+}
+
+
+
+
+
+
+
+
+
+
+\end{document}

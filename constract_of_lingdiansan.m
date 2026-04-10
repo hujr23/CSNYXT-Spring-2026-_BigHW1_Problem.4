@@ -1,0 +1,64 @@
+%% 单级压缩 vs 无限级饱和压缩微分对比 (0.3 MPa)
+clc; clear;
+
+% 1. 基础参数
+M_total = 100 / 3.6; % 100 t/h -> kg/s
+P1 = 0.1e6; P2 = 0.3e6;
+T0 = 20 + 273.15;
+eta_eff = 0.8;
+
+% 物性调用
+h1 = double(py.CoolProp.CoolProp.PropsSI('H', 'P', P1, 'Q', 1, 'Water'));
+h2_sat = double(py.CoolProp.CoolProp.PropsSI('H', 'P', P2, 'Q', 1, 'Water'));
+h0 = double(py.CoolProp.CoolProp.PropsSI('H', 'T', T0, 'P', P2, 'Water'));
+
+% =========================================================
+% CASE A: 单级压缩 (基准)
+% =========================================================
+s1 = double(py.CoolProp.CoolProp.PropsSI('S', 'P', P1, 'Q', 1, 'Water'));
+h2_s = double(py.CoolProp.CoolProp.PropsSI('H', 'P', P2, 'S', s1, 'Water'));
+h2_real = h1 + (h2_s - h1) / eta_eff; 
+
+m1_A = M_total * (h2_sat - h0) / (h2_real - h0);
+m2_A = M_total - m1_A;
+W2_A = m1_A * (h2_real - h1) / 1000;
+
+% =========================================================
+% CASE B: 无限级饱和压缩 (微分积分)
+% =========================================================
+m_curr = 1.0; % 初始基准
+W_acc = 0;
+steps = 1000;
+P_list = linspace(P1, P2, steps);
+dP = P_list(2) - P_list(1);
+
+for i = 1:steps-1
+    p = P_list(i);
+    v = 1 / double(py.CoolProp.CoolProp.PropsSI('D', 'P', p, 'Q', 1, 'Water'));
+    h_g = double(py.CoolProp.CoolProp.PropsSI('H', 'P', p, 'Q', 1, 'Water'));
+    
+    % 求 dhg/dp 斜率
+    h_next = double(py.CoolProp.CoolProp.PropsSI('H', 'P', p+dP, 'Q', 1, 'Water'));
+    
+    dw = (m_curr * v * dP) / eta_eff;
+    W_acc = W_acc + dw;
+    
+    % 微分平衡方程
+    dm2 = (dw - m_curr*(h_next - h_g)) / (h_next - h0);
+    m_curr = m_curr + dm2;
+end
+
+scale = M_total / m_curr;
+m1_B = 1.0 * scale;
+m2_B = M_total - m1_B;
+W2_B = W_acc * scale / 1000;
+
+% --- 结果展示 ---
+fprintf('========== 0.3 MPa 热力学对比结果 ==========\n');
+fprintf('项目                 单级压缩 (A)      无限级饱和 (B)\n');
+fprintf('入口闪蒸流量 m1 (t/h): %10.3f         %10.3f\n', m1_A*3.6, m1_B*3.6);
+fprintf('系统总补水量 m2 (t/h): %10.3f         %10.3f\n', m2_A*3.6, m2_B*3.6);
+fprintf('压缩机总功耗 W2 (kW):  %10.2f         %10.2f\n', W2_A, W2_B);
+fprintf('------------------------------------------\n');
+fprintf('物理分析：无限级压缩节省功耗 %.1f%%。\n', ...
+    (W2_A - W2_B)/W2_A*100);
